@@ -36,11 +36,11 @@ class REG_TYPE(Enum):
     REG_QWORD                       = 11    # QWORD in little endian format
     REG_QWORD_LITTLE_ENDIAN         = 11    # QWORD in little endian format
 
-class GroupPolicyValueException(Exception):
+class RegistryPolicyEntryException(Exception):
     pass
 
 @dataclass
-class GroupPolicyValue():
+class RegistryPolicyEntry():
     key: str = None
     value: str = None
     type: REG_TYPE = None
@@ -50,7 +50,7 @@ class GroupPolicyValue():
     def parse(self, buffer: bytes) -> int:
         # Check we start with a [
         if not buffer.startswith(_VALUE_START):
-            raise GroupPolicyValueException(f"Expected [")
+            raise RegistryPolicyEntryException(f"Expected [")
         
         # Get the raw data
         raw_key, raw_value, raw_type, raw_size, raw_data = buffer[2:].split(sep=';'.encode(_ENCODING), maxsplit=4)
@@ -76,7 +76,7 @@ class GroupPolicyValue():
         elif self.type in (REG_TYPE.REG_QWORD, REG_TYPE.REG_QWORD_LITTLE_ENDIAN):
             self.data = _get_le_qword(raw_data)
         else:
-            raise GroupPolicyValueException(f"Do not know how to decode type: {self.type}")
+            raise RegistryPolicyEntryException(f"Do not know how to decode type: {self.type}")
 
         # Calculate expected position of the value end marker
         end_position = (_LEN_START + len(raw_key) + _LEN_SEP + len(raw_value) + _LEN_SEP +
@@ -84,15 +84,15 @@ class GroupPolicyValue():
 
         # Check we have the end seperator at the expected position
         if not buffer.startswith(_VALUE_END, end_position):
-            raise GroupPolicyValueException(f"Could not find ] at position {end_position}")
+            raise RegistryPolicyEntryException(f"Could not find ] at position {end_position}")
 
         # Return the total length of this value
         return end_position + _LEN_END
 
-def GroupPolicyException(Exception):
+def RegistryPolicyException(Exception):
     pass
 
-class GroupPolicy(list):
+class RegistryPolicy(list):
     HEADER_LENGTH   = 8
     RP_SIGNATURE    = 0x67655250
     RP_VERSION      = 0x00000001
@@ -106,18 +106,18 @@ class GroupPolicy(list):
         # Check File Validity
         self.signature, self.version = unpack_from('<LL', self._file_bytes, 0)
         if self.signature != self.RP_SIGNATURE:
-            raise GroupPolicyException("Bad file - signature not matched")
+            raise RegistryPolicyException("Bad file - signature not matched")
         if self.version != self.RP_VERSION:
-            raise GroupPolicyException("Bad file - version not 0x1")
+            raise RegistryPolicyException("Bad file - version not 0x1")
 
-    def _parse_values(self) -> int:
+    def _parse_entries(self) -> int:
         offset = self.HEADER_LENGTH
         while offset < len(self._file_bytes):
-            value = GroupPolicyValue()
-            offset += value.parse(self._file_bytes[offset:])
-            self.append(value)
+            entry = RegistryPolicyEntry()
+            offset += entry.parse(self._file_bytes[offset:])
+            self.append(entry)
         
     def parse(self, policy_path):
         self._file_bytes = policy_path.read_bytes()
         self._parse_header()
-        self._parse_values()
+        self._parse_entries()

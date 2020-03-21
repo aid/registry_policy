@@ -1,29 +1,29 @@
-# Microsoft Windows Group Policy FileParser
+# Microsoft Registry File Parser
 
-The **`gpo`** package parses Microsoft Windows Group Policy Files – files typically with the extension `.pol`.
+The **`registry_policy`** package parses Microsoft Windows Registry Policy Files – files typically with the extension `.pol` – as used by Microsoft's Group Policy system.
 
-The parsing of this file is based upon the Windows documentation located at:
+The parsing of this file type is based upon the Microsoft's documentation located at:
 
 [Registry Policy File Format](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/policy/registry-policy-file-format)
 
 
 ## Home Page
 
-[Github Homepage](https://github.com/aid/gpo/)
+[Github Homepage](https://github.com/aid/registry_policy/)
 
 ## Usage
 
 ### Overview
 Usage is simple:
 
-1. Import the `gpo` module.
-1. Create a `GroupPolicy` object.
-1. Call the `parse()` method on your new `GroupPolicy` object with a Path pointing to the `.pol` file you wish to parse.
-1. The `GroupPolicy` object can now be tread as a list containing the policy values from the `.pol` file.
+1. Import the `registry_policy` module.
+1. Create a `RegistryPolicy` object.
+1. Call the `parse()` method on your new `RegistryPolicy` object with a Path pointing to the `.pol` file you wish to parse.
+1. The `RegistryPolicy` object can now be tread as a list containing the policy values from the `.pol` file.
 
 ### Group Policy Values
 
-The group policy values are of type `GroupPolicyValue` and that class contains the following items:
+The group policy values are of type `RegistryPolicyEntry` and that class contains the following items:
 
 *   **key** – A `str` object with the path within the Windows Registry for this item
 *   **value** – A `str` object which is the *name* of the key
@@ -53,11 +53,11 @@ A simple example of the usage of this module:
 
 ```python
 from pathlib import Path
-from gpo import GroupPolicy
+from registry_policy import RegistryPolicy
 
-gp = GroupPolicy()
-gp.parse(Path('registry.pol'))
+policy = RegistryPolicy()
+policy.parse(Path('registry.pol'))
 
-for item in gp:
+for item in policy:
     print(f"{item.key} \\ {item.value} = {item.data}")
 ```
