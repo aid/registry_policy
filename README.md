@@ -1,29 +1,32 @@
 # Microsoft Registry File Parser
 
-The **`registry_policy`** package parses Microsoft Windows Registry Policy Files – files typically with the extension `.pol` – as used by Microsoft's Group Policy system.
+## Introduction
+
+This **python3** package – `registry_policy` – parses Microsoft Windows Registry Policy Files as used by Microsoft's Group Policy system.  These files typically use the extension `.pol`. 
+
+The project's homepage is on Guthub at:
+
+[https://github.com/aid/registry_policy/](https://github.com/aid/registry_policy/)
 
 The parsing of this file type is based upon the Microsoft's documentation located at:
 
-[Registry Policy File Format](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/policy/registry-policy-file-format)
+[https://docs.microsoft.com/](https://docs.microsoft.com/en-us/previous-versions/windows/desktop/policy/registry-policy-file-format)
 
-
-## Home Page
-
-[Github Homepage](https://github.com/aid/registry_policy/)
 
 ## Usage
 
 ### Overview
-Usage is simple:
+
+Usage is straightforward:
 
 1. Import the `registry_policy` module.
 1. Create a `RegistryPolicy` object.
-1. Call the `parse()` method on your new `RegistryPolicy` object with a Path pointing to the `.pol` file you wish to parse.
-1. The `RegistryPolicy` object can now be tread as a list containing the policy values from the `.pol` file.
+1. Call the `parse()` method on your new `RegistryPolicy` object with a single parameter of type `Path` pointing to the `.pol` file you wish to parse.
+1. The `RegistryPolicy` object can now be treated as a list who's contentas arethe policy entries from the `.pol` file, each entry represented as a `RegistryPolicyEntry` object.
 
-### Group Policy Values
+### Registry Policy Entries
 
-The group policy values are of type `RegistryPolicyEntry` and that class contains the following items:
+Each of the registry policy entries are of type `RegistryPolicyEntry`; and that class contains the following fields:
 
 *   **key** – A `str` object with the path within the Windows Registry for this item
 *   **value** – A `str` object which is the *name* of the key
@@ -58,6 +61,6 @@ from registry_policy import RegistryPolicy
 policy = RegistryPolicy()
 policy.parse(Path('registry.pol'))
 
-for item in policy:
-    print(f"{item.key} \\ {item.value} = {item.data}")
+for entry in policy:
+    print(f"{entry.key} \\ {entry.value} = {entry.data}")
 ```
