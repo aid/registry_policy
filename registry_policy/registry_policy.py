@@ -4,6 +4,10 @@ from struct import unpack_from
 from pathlib import Path
 from dataclasses import dataclass
 
+"""
+Microsoft Registry File Parser
+"""
+
 
 _ENCODING        = 'utf_16_le'
 
@@ -41,6 +45,22 @@ class RegistryPolicyEntryException(Exception):
 
 @dataclass
 class RegistryPolicyEntry():
+    """Representation of a single Registry Policy entry
+    
+    Attributes
+    ----------
+    key: str
+        The path within the Windows Registry for this item.
+    value: str
+        The *name* of the key in the Registry. 
+    type: REG_TYPE
+        The type of the data stored by this entry.
+    size: int
+        The length of the original raw data wihtin thise entry.
+    data: <variable>
+        The actual data itself, the type depending upon the value of the type field.
+
+    """
     key: str = None
     value: str = None
     type: REG_TYPE = None
@@ -48,6 +68,27 @@ class RegistryPolicyEntry():
     data: bytes = None
 
     def parse(self, buffer: bytes) -> int:
+        """Parse a single Policy entry
+
+        Parse the provided buffer into a single Policy entry; updating
+        this object with the parsed data.
+    
+        Parameters
+        ----------
+        buffer : bytes
+            Data for this function to parse into the RegistryPolicyEntry's paramaters.
+
+        Returns
+        -------
+        int
+            Total length of this Policy entry within the original buffer.
+
+        Raises
+        ------
+        RegistryPolicyEntryException
+            If the data within the provided buffer is not formatted as expected.
+        """
+
         # Check we start with a [
         if not buffer.startswith(_VALUE_START):
             raise RegistryPolicyEntryException(f"Expected [")
@@ -61,7 +102,7 @@ class RegistryPolicyEntry():
         self.type = REG_TYPE(_get_le_dword(raw_type))
         self.size = _get_le_dword(raw_size)
 
-        # Set the self.data attribute based upon self.type and limited to self.size
+        # Set the self.data attribute based upon self.type; limited to self.size
         if self.type == REG_TYPE.REG_BINARY:
             self.data = raw_data[0:self.size]
         elif self.type in (REG_TYPE.REG_DWORD, REG_TYPE.REG_DWORD_LITTLE_ENDIAN):
@@ -93,9 +134,15 @@ def RegistryPolicyException(Exception):
     pass
 
 class RegistryPolicy(list):
-    HEADER_LENGTH   = 8
-    RP_SIGNATURE    = 0x67655250
-    RP_VERSION      = 0x00000001
+    """Representation of a Microsoft Registry Policy
+
+    This object is a list containing a series of `RegistryPolicyEntry` objects;
+    each representing a single policy entry.
+    """
+    
+    _HEADER_LENGTH   = 8
+    _RP_SIGNATURE    = 0x67655250
+    _RP_VERSION      = 0x00000001
 
     def __init__(self):
         self.signature: int = None
@@ -105,19 +152,33 @@ class RegistryPolicy(list):
     def _parse_header(self):
         # Check File Validity
         self.signature, self.version = unpack_from('<LL', self._file_bytes, 0)
-        if self.signature != self.RP_SIGNATURE:
+        if self.signature != self._RP_SIGNATURE:
             raise RegistryPolicyException("Bad file - signature not matched")
-        if self.version != self.RP_VERSION:
+        if self.version != self._RP_VERSION:
             raise RegistryPolicyException("Bad file - version not 0x1")
 
     def _parse_entries(self) -> int:
-        offset = self.HEADER_LENGTH
+        offset = self._HEADER_LENGTH
         while offset < len(self._file_bytes):
             entry = RegistryPolicyEntry()
             offset += entry.parse(self._file_bytes[offset:])
             self.append(entry)
         
-    def parse(self, policy_path):
+    def parse(self, policy_path: Path):
+        """
+        Parse the Policy file pointed to by the provided Path; updating
+        this policy object to reflect the provided file.
+
+        Parameters
+        ----------
+        policy_path : Path
+            The file location of the Policy file
+
+        Raises
+        ------
+        RegistryPolicyException
+            If the data within the provided file is not formatted as expected.
+        """
         self._file_bytes = policy_path.read_bytes()
         self._parse_header()
         self._parse_entries()
